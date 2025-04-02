@@ -11,6 +11,38 @@ mod tests {
     use sqlx::postgres::{PgPoolOptions, PgRow};
 
     #[tokio::test]
+    async fn test_test_auto_increment_with_transaction() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        let mut transaction = pool.begin().await?;
+
+        sqlx::query("insert into sellers(name) values ($1) returning id;")
+            .bind("contoh seller")
+            .execute(&mut *transaction).await?;
+
+        let result: PgRow = sqlx::query("select lastval() as id")
+            .fetch_one(&mut *transaction).await?;
+
+        let id: i32 = result.get_unchecked("id");
+        println!("id seller : {}", id);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_test_auto_increment() -> Result<(), Error> {
+        let pool = get_pool().await?;
+
+        let result: PgRow = sqlx::query("insert into sellers(name) values ($1) returning id;")
+            .bind("contoh seller")
+            .fetch_one(&pool).await?;
+
+        let id: i32 = result.get("id");
+        println!("id seller : {}", id);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_transaction() -> Result<(), Error> {
         let pool = get_pool().await?;
         let mut transaction = pool.begin().await?;
